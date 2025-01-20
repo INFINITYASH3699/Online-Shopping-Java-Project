@@ -1,7 +1,10 @@
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import java.util.List;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Entity
 @Table(name = "orders")
@@ -15,13 +18,15 @@ public class Order {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
-    @ManyToMany
-    @JoinTable(
-        name = "order_products",
-        joinColumns = @JoinColumn(name = "order_id"),
-        inverseJoinColumns = @JoinColumn(name = "product_id")
-    )
-    private List<Product> products;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "order_products", joinColumns = @JoinColumn(name = "order_id"))
+    @MapKeyJoinColumn(name = "product_id")
+    @Column(name = "quantity")
+    private Map<Product, Integer> products = new HashMap<>();
+
+
+    @Column(nullable = false)
+    private Double totalPrice;
 
     @Column(nullable = false)
     private String status;
@@ -43,12 +48,20 @@ public class Order {
         this.customer = customer;
     }
 
-    public List<Product> getProducts() {
+    public Map<Product, Integer> getProducts() {
         return products;
     }
 
-    public void setProducts(List<Product> products) {
+    public void setProducts(Map<Product, Integer> products) {
         this.products = products;
+    }
+
+    public Double getTotalPrice() {
+        return totalPrice;
+    }
+
+    public void setTotalPrice(Double totalPrice) {
+        this.totalPrice = totalPrice;
     }
 
     public String getStatus() {
@@ -59,3 +72,4 @@ public class Order {
         this.status = status;
     }
 }
+	

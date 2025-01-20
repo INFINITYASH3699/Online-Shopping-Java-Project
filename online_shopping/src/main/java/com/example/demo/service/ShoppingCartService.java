@@ -1,13 +1,16 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Customer;
+import com.example.demo.entity.Order;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.ShoppingCart;
 import com.example.demo.repository.CustomerRepository;
+import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.repository.ShoppingCartRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,13 +27,12 @@ public class ShoppingCartService {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private OrderRepository orderRepository;
+
     // Get Shopping Cart by Customer ID
     public ShoppingCart getCartByCustomerId(Long customerId) {
-        ShoppingCart cart = cartRepository.findByCustomerId(customerId);
-        if (cart == null) {
-            throw new RuntimeException("Cart not found for customer ID: " + customerId);
-        }
-        return cart;
+        return cartRepository.findByCustomerId(customerId);
     }
 
     // Add Product to Cart
@@ -39,23 +41,18 @@ public class ShoppingCartService {
             throw new RuntimeException("Quantity must be greater than zero.");
         }
 
-        // Find the customer
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new RuntimeException("Customer not found with ID: " + customerId));
 
-        // Find or create the shopping cart
         ShoppingCart cart = cartRepository.findByCustomerId(customerId);
         if (cart == null) {
             cart = new ShoppingCart();
             cart.setCustomer(customer);
-            cart = cartRepository.save(cart);
         }
 
-        // Find the product
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
 
-        // Update the cart items
         cart.getItems().put(product, cart.getItems().getOrDefault(product, 0) + quantity);
 
         return cartRepository.save(cart);
@@ -71,34 +68,58 @@ public class ShoppingCartService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
 
-        cart.getItems().remove(product);
+        // Ensure the product exists in the cart before attempting to remove it
+        if (cart.getItems().containsKey(product)) {
+            cart.getItems().remove(product);
+        } else {
+            throw new RuntimeException("Product not found in the cart.");
+        }
 
         return cartRepository.save(cart);
     }
-
-    // Clear the Cart
+    
+ // Add this method in the ShoppingCartService class
     public void clearCart(Long customerId) {
         ShoppingCart cart = cartRepository.findByCustomerId(customerId);
-        if (cart != null) {
-            cart.getItems().clear();
-            cartRepository.save(cart);
+        if (cart == null) {
+            throw new RuntimeException("Cart not found for customer ID: " + customerId);
         }
+
+        // Clear all items from the cart
+        cart.getItems().clear();
+        cartRepository.save(cart);
     }
 
-    // Convert ShoppingCart to DTO for clean API responses
-    public Map<String, Object> convertToDTO(ShoppingCart cart) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", cart.getId());
-        response.put("customer", cart.getCustomer());
-        Map<Long, Map<String, Object>> itemsMap = new HashMap<>();
+
+    // Checkout Cart
+    @Transactional
+    public Order checkout(Long customerId) {
+        ShoppingCart cart = cartRepository.findByCustomerId(customerId);
+        if (cart == null || cart.getItems().isEmpty()) {
+            throw new RuntimeException("Cart is empty or does not exist for customer ID: " + customerId);
+        }
+
+        Order order = new Order();
+        order.setCustomer(cart.getCustomer());
+        order.setProducts(new HashMap<>(cart.getItems()));
+        order.setTotalPrice(cart.getItems().entrySet().stream()
+                .mapToDouble(entry -> entry.getKey().getPrice() * entry.getValue())
+                .sum());
+        order.setStatus("Pending");
+
+        order = orderRepository.save(order);
+
         cart.getItems().forEach((product, quantity) -> {
-            Map<String, Object> itemDetails = new HashMap<>();
-            itemDetails.put("name", product.getName());
-            itemDetails.put("price", product.getPrice());
-            itemDetails.put("quantity", quantity);
-            itemsMap.put(product.getId(), itemDetails);
+            if (product.getStockQuantity() < quantity) {
+                throw new RuntimeException("Insufficient stock for product: " + product.getName());
+            }
+            product.setStockQuantity(product.getStockQuantity() - quantity);
+            productRepository.save(product);
         });
-        response.put("items", itemsMap);
-        return response;
+
+        cart.getItems().clear();
+        cartRepository.save(cart);
+
+        return order;
     }
 }

@@ -1,11 +1,13 @@
 package com.example.demo.controller;
 
 import com.example.demo.entity.Order;
+import com.example.demo.entity.Product;
 import com.example.demo.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,32 +18,90 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    // Create an Order
-    @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody Map<String, Object> payload) {
-        Long customerId = Long.valueOf(payload.get("customerId").toString());
-        List<Integer> productIds = (List<Integer>) payload.get("productIds");
-        String status = payload.get("status").toString();
-
-        Order createdOrder = orderService.createOrder(customerId, productIds.stream().map(Long::valueOf).toList(), status);
-        return ResponseEntity.ok(createdOrder);
-    }
-
-    // Get all Orders
+    // Get all orders
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders() {
-        return ResponseEntity.ok(orderService.getAllOrders());
-    }
+    public ResponseEntity<List<Map<String, Object>>> getAllOrders() {
+        List<Order> orders = orderService.getAllOrders();
 
-    // Get an Order by ID
+        // Convert to DTO
+        List<Map<String, Object>> response = orders.stream().map(order -> {
+            Map<String, Object> orderDTO = new HashMap<>();
+            orderDTO.put("id", order.getId());
+            orderDTO.put("customer", order.getCustomer());
+            orderDTO.put("totalPrice", order.getTotalPrice());
+            orderDTO.put("status", order.getStatus());
+
+            Map<Long, Map<String, Object>> productsDTO = new HashMap<>();
+            order.getProducts().forEach((product, quantity) -> {
+                Map<String, Object> productDetails = new HashMap<>();
+                productDetails.put("id", product.getId());
+                productDetails.put("name", product.getName());
+                productDetails.put("price", product.getPrice());
+                productDetails.put("quantity", quantity);
+                productsDTO.put(product.getId(), productDetails);
+            });
+
+            orderDTO.put("products", productsDTO);
+            return orderDTO;
+        }).toList();
+
+        return ResponseEntity.ok(response);
+    }
+    
+ // Get an Order by ID
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> getOrderById(@PathVariable Long orderId) {
-        return ResponseEntity.ok(orderService.getOrderById(orderId));
+    public ResponseEntity<Map<String, Object>> getOrderById(@PathVariable Long orderId) {
+        Order order = orderService.getOrderById(orderId);
+
+        // Convert to DTO
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", order.getId());
+        response.put("customer", order.getCustomer());
+        response.put("totalPrice", order.getTotalPrice());
+        response.put("status", order.getStatus());
+
+        Map<Long, Map<String, Object>> productsDTO = new HashMap<>();
+        order.getProducts().forEach((product, quantity) -> {
+            Map<String, Object> productDetails = new HashMap<>();
+            productDetails.put("id", product.getId());
+            productDetails.put("name", product.getName());
+            productDetails.put("price", product.getPrice());
+            productDetails.put("quantity", quantity);
+            productsDTO.put(product.getId(), productDetails);
+        });
+
+        response.put("products", productsDTO);
+        return ResponseEntity.ok(response);
+    }
+    
+ // Update Order Status
+    @PutMapping("/{orderId}")
+    public ResponseEntity<Map<String, Object>> updateOrderStatus(
+            @PathVariable Long orderId,
+            @RequestParam String status) {
+        Order updatedOrder = orderService.updateOrderStatus(orderId, status);
+
+        // Convert to DTO
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", updatedOrder.getId());
+        response.put("customer", updatedOrder.getCustomer());
+        response.put("totalPrice", updatedOrder.getTotalPrice());
+        response.put("status", updatedOrder.getStatus());
+
+        Map<Long, Map<String, Object>> productsDTO = new HashMap<>();
+        updatedOrder.getProducts().forEach((product, quantity) -> {
+            Map<String, Object> productDetails = new HashMap<>();
+            productDetails.put("id", product.getId());
+            productDetails.put("name", product.getName());
+            productDetails.put("price", product.getPrice());
+            productDetails.put("quantity", quantity);
+            productsDTO.put(product.getId(), productDetails);
+        });
+
+        response.put("products", productsDTO);
+        return ResponseEntity.ok(response);
     }
 
-    // Update Order Status
-    @PutMapping("/{orderId}")
-    public ResponseEntity<Order> updateOrderStatus(@PathVariable Long orderId, @RequestParam String status) {
-        return ResponseEntity.ok(orderService.updateOrderStatus(orderId, status));
-    }
+
 }
+

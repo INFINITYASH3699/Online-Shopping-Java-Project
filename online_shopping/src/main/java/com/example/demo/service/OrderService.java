@@ -8,8 +8,9 @@ import com.example.demo.repository.CustomerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 @Service
 public class OrderService {
@@ -34,8 +35,18 @@ public class OrderService {
             throw new RuntimeException("No valid products found for the given IDs.");
         }
 
-        order.setProducts(products);
+        // Convert the list of products to a map with default quantity of 1
+        Map<Product, Integer> productMap = new HashMap<>();
+        for (Product product : products) {
+            productMap.put(product, 1); // Set default quantity to 1
+        }
+
+        order.setProducts(productMap);
+        order.setTotalPrice(productMap.entrySet().stream()
+                .mapToDouble(entry -> entry.getKey().getPrice() * entry.getValue())
+                .sum());
         order.setStatus(status);
+
         return orderRepository.save(order);
     }
 
