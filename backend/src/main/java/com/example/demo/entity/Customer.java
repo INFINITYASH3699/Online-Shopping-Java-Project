@@ -26,6 +26,4 @@ public class Customer extends User {
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
     }
-    
-    
 }
