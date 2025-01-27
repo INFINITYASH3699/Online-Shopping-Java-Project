@@ -1,31 +1,31 @@
 package com.example.demo.entity;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import java.util.List;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.JoinColumn;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 public class Customer extends User {
 
-    private String address;
+    @ManyToMany
+    @JoinTable(
+        name = "customer_roles",
+        joinColumns = @JoinColumn(name = "customer_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
 
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Order> orders;
-
-    // Getters and Setters
-    public String getAddress() {
-        return address;
+    @Override
+    public Set<Role> getRoles() {
+        return roles;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
     }
-
-    public List<Order> getOrders() {
-        return orders;
-    }
-
-    public void setOrders(List<Order> orders) {
-        this.orders = orders;
-    }
+    
+    
 }

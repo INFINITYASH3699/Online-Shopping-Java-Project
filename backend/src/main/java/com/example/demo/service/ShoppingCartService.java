@@ -44,7 +44,7 @@ public class ShoppingCartService {
         return cart;
     }
 
-    // Add Product to Cart (Updated Logic)
+    // Add Product to Cart
     public ShoppingCart addProductToCart(Long customerId, Long productId, int quantity) {
         logger.info("Updating quantity for product ID: {} to {} for customer ID: {}", productId, quantity, customerId);
 
@@ -93,6 +93,27 @@ public class ShoppingCartService {
             throw new RuntimeException("Product not found in the cart.");
         }
     }
+    
+    public ShoppingCart updateProductQuantity(Long customerId, Long productId, int quantity) {
+        ShoppingCart cart = cartRepository.findByCustomerId(customerId);
+        if (cart == null) {
+            throw new RuntimeException("Cart not found for customer ID: " + customerId);
+        }
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+
+        if (quantity <= 0) {
+            // If quantity is zero or less, remove the product
+            cart.getItems().remove(product);
+        } else {
+            // Otherwise, set the exact quantity
+            cart.getItems().put(product, quantity);
+        }
+
+        return cartRepository.save(cart);
+    }
+
 
     // Clear the Cart
     public void clearCart(Long customerId) {

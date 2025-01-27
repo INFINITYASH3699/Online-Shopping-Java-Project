@@ -42,6 +42,17 @@ public class ShoppingCartController {
         ShoppingCart cart = cartService.removeProductFromCart(customerId, productId);
         return ResponseEntity.ok(convertToDTO(cart));
     }
+    
+    @PostMapping("/{customerId}/update")
+    public ResponseEntity<Map<String, Object>> updateProductQuantity(
+            @PathVariable Long customerId,
+            @RequestParam Long productId,
+            @RequestParam int quantity) {
+        // Use the existing service method to set the exact quantity
+        ShoppingCart cart = cartService.updateProductQuantity(customerId, productId, quantity);
+        return ResponseEntity.ok(convertToDTO(cart));
+    }
+
 
     // Clear Cart
     @DeleteMapping("/{customerId}/clear")

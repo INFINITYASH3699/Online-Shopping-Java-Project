@@ -42,5 +42,4 @@ public class ProductService {
             throw new RuntimeException("Product not found with ID: " + id);
         }
     }
-    
 }

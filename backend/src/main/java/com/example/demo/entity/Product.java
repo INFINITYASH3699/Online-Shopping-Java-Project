@@ -11,22 +11,17 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(length = 255, nullable = false)
     private String name;
-
-    @Column(nullable = false)
     private Double price;
 
-    @Column(nullable = false)
+    @Column(name = "stock_quantity")
     private Integer stockQuantity;
 
     // Override equals and hashCode
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         Product product = (Product) o;
         return Objects.equals(id, product.id);
     }

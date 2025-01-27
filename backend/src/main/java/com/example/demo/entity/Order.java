@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.HashMap;
@@ -23,19 +24,12 @@ public class Order {
     @Column(name = "quantity")
     private Map<Product, Integer> products = new HashMap<>();
 
+
     @Column(nullable = false)
     private Double totalPrice;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false)
     private String status;
-
-    public enum OrderStatus {
-        PENDING,
-        CONFIRMED,
-        SHIPPED,
-        DELIVERED,
-        CANCELLED
-    }
 
     // Getters and Setters
     public Long getId() {
@@ -78,3 +72,4 @@ public class Order {
         this.status = status;
     }
 }
+	
